@@ -1,115 +1,159 @@
-# Temporal-Spatial Graph-Integrated Framework for EEG Emotion Recognition (LSTM-GCN)
+# Temporal–Spatial Graph-Integrated Framework for EEG-Based Emotion Recognition Using LSTM–GCN Architecture
 
-This repository contains the official PyTorch implementation of the dual-stage LSTM-GCN pipeline for subject-dependent/independent EEG emotion recognition evaluated on the SEED benchmark dataset.
+## Abstract
 
-The architecture decouples temporal dynamics and spatial electrode topology into two sequential stages:
-1. **Channel-wise Temporal Representation:** A bidirectional LSTM network extracts temporal dynamics independently for each of the 62 EEG channels from differential entropy (DE) features across 5 frequency bands ($\delta, \theta, \alpha, \beta, \gamma$).
-2. **Spatial Topology Modeling:** A Graph Convolutional Network (GCN) processes the learned channel embeddings over an anatomical EEG adjacency graph to perform 3-class emotion classification (Positive, Neutral, Negative).
+This repository provides a two-stage deep-learning pipeline for three-class emotion recognition from differential entropy (DE) features in the SEED EEG dataset. In the first stage, channel-wise bidirectional LSTM encoders transform five-band features into electrode-level representations. In the second stage, a graph convolutional network (GCN) aggregates those representations over an EEG electrode graph and predicts an emotion class. The implementation includes feature preprocessing, graph construction, cached embeddings, a stratified evaluation split, and a grid search over selected GCN configurations.
 
+## Keywords
 
-## Repository Structure
+EEG; emotion recognition; SEED; differential entropy; LSTM; graph convolutional network; deep learning
 
-├── seed_lstm_gcn.py        # Main execution script (data loading, featurization, grid search)
-├── channel-order.xlsx      # Electrode layout definition (62 channels)
-├── requirements.txt        # Core dependencies
+## 1. Introduction
+
+Electroencephalography (EEG) provides temporally rich signals for studying affective states. This project combines recurrent feature encoding with graph-based spatial aggregation: channel-wise LSTMs encode the input features for each electrode, and a GCN models relationships between electrodes in a fixed graph. The pipeline uses the pre-extracted SEED features and is implemented in [`seed_lstm_gcn.py`](seed_lstm_gcn.py).
+
+## 2. Repository Structure
+
+```text
+.
+├── seed_lstm_gcn.py       # Data loading, preprocessing, model training, and grid search
+├── channel-order.xlsx     # Electrode order used to map channel names to graph nodes
+├── requirements.txt       # Project dependencies
 ├── .gitignore
 └── README.md
+```
 
+## 3. Methodology
 
-## Method Overview
+### 3.1. Dataset and Input Features
 
-Input DE Features (62 channels x 5 bands)
-                      │
-                      ▼
-┌────────────────────────────────────────────────────────┐
-│  Stage 1: Channel-wise Bi-LSTM Feature Extraction      │
-│  - 62 independent models (one per electrode)           │
-│  - Maps raw band inputs into temporal embedding space  │
-│  - Dimension: d_embed ∈ {16, 32, 64}                   │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│  Stage 2: Spatial GCN Topological Aggregation           │
-│  - Fixed graph structure constructed from 10-20 layout │
-│  - Node features: LSTM channel embeddings              │
-│  - Message passing across adjacent electrodes          │
-│  - Global mean pooling + Linear classification         │
-└────────────────────────────────────────────────────────┘
+The pipeline expects the SEED `ExtractedFeatures_4s` MATLAB feature files. Each trial variable is expected to have shape `(62, 5, time_steps)`, where the dimensions correspond to 62 EEG channels, five DE frequency-band features, and extracted time steps. The loader converts these arrays to samples of shape `(samples, 62, 5)`. The five features correspond to the frequency bands provided in the extracted-feature dataset.
 
+Trial variables are associated with the three integer class IDs (`0`, `1`, and `2`) using the fixed trial-label sequence in the script. Refer to that sequence when interpreting class-specific results.
 
-## Dataset & Preprocessing
+### 3.2. Electrode Graph
 
-- **Dataset:** [SEED (SJTU Emotion EEG Dataset)](https://bcmi.sjtu.edu.cn/~seed/seed.html)
-- **Features:** Pre-computed Differential Entropy (`ExtractedFeatures_4s`) with 5 frequency bands per channel.
-- **Labels:** 3 classes mapped across 15 movie clips per session:
-  - `0`: Negative
-  - `1`: Neutral
-  - `2`: Positive
-- **Graph Topology:** Derived from standard 10–20 EEG electrode placement, encoded via bilateral connections across adjacent nodes.
+The implementation constructs a fixed, undirected graph from electrode connections defined in `seed_lstm_gcn.py`. The first column of the channel-order spreadsheet maps the feature-array channel order to graph node indices. Channel names are normalized to uppercase and whitespace is trimmed; only connections whose endpoint names are present in the spreadsheet are included. The graph is cached as `edge_index.pt`.
 
-## Installation
+### 3.3. Two-Stage LSTM–GCN Framework
 
-Ensure CUDA 11.8+ or 12.x is available if running with GPU acceleration.
+```text
++--------------------------------------------------------------+
+| Input DE features: one sample with 62 channels x 5 features  |
++------------------------------+-------------------------------+
+                               |
+                               v
++--------------------------------------------------------------+
+| Stage 1: Channel-wise Bi-LSTM feature encoding               |
+| - One encoder is trained independently for each channel      |
+| - Input to each encoder: (batch, 1, 5)                       |
+| - Embedding dimensions searched: 16, 32, and 64              |
++------------------------------+-------------------------------+
+                               |
+                               v
++--------------------------------------------------------------+
+| Stage 2: Graph convolutional classification                  |
+| - Nodes: EEG electrodes; node features: LSTM embeddings       |
+| - Edges: fixed electrode adjacency graph                      |
+| - GCN layers followed by global mean pooling and classifier   |
++--------------------------------------------------------------+
+```
+
+The LSTM encoders use two bidirectional layers, with a learned projection to the selected embedding dimension. The GCN search varies embedding dimension, hidden dimension, and number of graph-convolution layers.
+
+## 4. Installation
+
+Use Python 3.9 or later. Install the Python dependencies and a PyTorch/PyTorch Geometric build compatible with your platform and CUDA setup (if applicable):
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+pip install numpy pandas scipy scikit-learn openpyxl
+pip install torch
+pip install torch-geometric
+```
 
-# Install PyTorch matching your CUDA version, e.g.:
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+## 5. Data Preparation and Execution
 
-# Install dependencies
-pip install -r requirements.txt
+Prepare the extracted SEED MATLAB files and an Excel channel-order file. The channel-order file should have one electrode name per row in its first column, following the same order as the 62 channels in the feature arrays.
 
-## Usage
+Run the pipeline with paths appropriate for your environment:
 
-### 1. Prepare Directory Structure
-Place the SEED dataset and the channel configuration file in accessible directories:
-- SEED `.mat` files in `data/SEED_EEG/ExtractedFeatures_4s` (or specify via CLI).
-- `channel-order.xlsx` in the repository root.
-
-### 2. Execution
-To run the complete pipeline (data loading, stage-1 temporal training, stage-2 GCN hyperparameter grid search):
-
-
+```bash
 python seed_lstm_gcn.py \
-    --data_dir "data/ExtractedFeatures_4s" \
-    --channel_path "channel-order.xlsx" \
-    --save_dir "saved_features" \
-    --epochs 50 \
-    --batch_size 64 \
-    --lr 0.001
+  --data_dir "/path/to/ExtractedFeatures_4s" \
+  --channel_path "/path/to/channel-order.xlsx" \
+  --save_dir "saved_features"
+```
 
+All three command-line arguments are optional. The script defaults to a Windows-specific SEED data directory, `channel-order.xlsx`, and `saved_features`. The script uses CUDA when available and otherwise runs on CPU.
 
-### Script Arguments
+## 6. Training and Evaluation
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `--data_dir` | `str` | `data/ExtractedFeatures_4s` | Directory containing SEED .mat feature files |
-| `--channel_path` | `str` | `channel-order.xlsx` | Path to electrode channel order file |
-| `--save_dir` | `str` | `saved_features` | Directory to cache intermediate embeddings and weights |
-| `--epochs` | `int` | `50` | Maximum training epochs for the spatial GCN |
-| `--batch_size` | `int` | `64` | Batch size for GCN training |
-| `--lr` | `float` | `1e-3` | Learning rate for Adam optimizer |
+The pipeline uses a stratified 70%/15%/15% train/validation/test split with split seed 42. For each embedding dimension, it evaluates the following GCN configuration grid:
 
+| Parameter | Values |
+|---|---|
+| LSTM embedding dimension | 16, 32, 64 |
+| GCN hidden dimension | 32, 64, 128 |
+| Number of GCN layers | 2, 3 |
 
-## Hyperparameter Grid Search
+GCN checkpoints are selected by validation loss. Test accuracy for each configuration is written to the results CSV. The random seeds for NumPy and PyTorch are set to 42; some GPU operations may remain nondeterministic.
 
-The pipeline performs automated validation across the following parameter grid for the spatial classifier:
-- **LSTM Embedding Dimensions:** `[16, 32, 64]`
-- **GCN Hidden Channels:** `[32, 64, 128]`
-- **GCN Layers:** `[2, 3]`
+## 7. Outputs
 
-Results, checkpoints, and evaluation metrics (Accuracy, Macro-F1) are logged directly to `saved_features/grid_search_results.csv`.
+The `--save_dir` folder is created automatically. Depending on the run and available caches, it contains:
 
+- `X_raw.npy`, `y_raw.npy` — standardized input samples and integer class labels.
+- `edge_index.pt` — cached graph connectivity.
+- `embeddings_dim16.npy`, `embeddings_dim32.npy`, `embeddings_dim64.npy` — cached channel embeddings.
+- `model_emb*_hid*_lay*.pth` — GCN checkpoints selected using validation loss.
+- `grid_search_results.csv` — test accuracy for the evaluated configurations.
+
+Cached arrays, embeddings, and graph connectivity are reused when present in `--save_dir`. Use a separate output directory or remove the relevant generated cache files after changing source data or channel ordering.
+
+## 8. Implementation Details
+
+The implementation operates on pre-extracted DE features, rather than raw EEG recordings. Each channel encoder receives a single five-feature input step and produces a channel embedding; the subsequent GCN performs spatial aggregation over the electrode graph. The executable script is the reference for the implemented preprocessing, label sequence, model configuration, and command-line options.
 
 ## Citation
 
-If you use this codebase or architecture in your research, please cite:
+If you use this implementation or describe the associated framework in your work, cite the paper:
 
-@article{amiri2025lstm_gcn_eeg,
-  title={Temporal--Spatial Graph-Integrated Framework for EEG-Based Emotion Recognition Using LSTM--GCN Architecture},
-  author={Amiri, Zahra and Mohseni, Abdorreza Hesam},
-  year={2025}
+```bibtex
+@article{amiri2025temporalSpatialLstmGcn,
+  title   = {Temporal--Spatial Graph-Integrated Framework for EEG-Based Emotion Recognition Using LSTM--GCN Architecture},
+  author  = {Amiri, Zahra and Mohseni, Abdorreza Hesam},
+  year    = {2025}
 }
+```
+
+## License
+
+No license file is included in this repository. Please contact the authors for permission before redistributing or reusing the code beyond applicable copyright exceptions.
+
+---
+
+Paper authors: Zahra Amiri and Abdorreza Hesam Mohseni; University of Guilan.
+
+Dataset: [SEED: SJTU Emotion EEG Dataset](https://bcmi.sjtu.edu.cn/~seed/seed.html).
+
+## Acknowledgements
+
+The authors acknowledge the SEED dataset and its contributors for making EEG emotion-recognition research possible.
+
+## Project Structure at a Glance
+
+```text
+SEED extracted features (.mat)
+               |
+               v
+       Feature loading and scaling
+               |
+               v
+     Channel-wise LSTM embeddings
+               |
+               v
+ Electrode graph + GCN classifier
+               |
+               v
+     Grid-search results and models
+```
