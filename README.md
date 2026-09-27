@@ -181,4 +181,4 @@ If you use this codebase or framework in your research, please cite our conferen
 ## 📬 Contact & Inquiries
 
 For technical questions or prospective research discussions, please contact:
-- **Zahra Amiri** — [zahraamiri@khu.ac.ir](mailto:zahraamiri@khu.ac.ir)
+- **Avin Amiri** — [zahraamiri@khu.ac.ir](mailto:zahraamiri@khu.ac.ir)
