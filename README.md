@@ -134,7 +134,7 @@ Ensure the SEED extracted differential entropy features and channel layout are p
 The pipeline handles preprocessing, channel graph construction, Stage-1 node embedding pretraining, and Stage-2 GCN grid search:
 
 ```bash
-python main.py
+python seed_lstm_gcn.py
 ```
 
 ### Step 3: Outputs & Reproducibility
@@ -148,15 +148,16 @@ python main.py
 
 | Hyperparameter | Value | Description |
 |---|---|---|
-| Input Dimension | $5$ | Differential Entropy features ($\delta, \theta, \alpha, \beta, \gamma$) |
-| Electrode Nodes ($|V|$) | $62$ | Standard 10–20 electrode configuration |
-| Graph Directed Edges ($|E|$) | $216$ | 108 bidirectional anatomical adjacencies |
-| Optimizer | AdamW | Stage 2 GCN ($\text{weight\_decay} = 10^{-4}$) |
-| Learning Rate | $1 \times 10^{-3}$ | Reduced by $0.5$ via `ReduceLROnPlateau` (patience = 10) |
-| Batch Size | $32$ | Mini-batch sample size |
-| Max Epochs | $100$ | Stage 2 GCN |
-| Early Stopping | $20$ | Epochs on validation accuracy |
-| Gradient Clipping | $1.0$ | Max $\ell_2$-norm clipping |
+| Input Dimension | 5 | Differential Entropy features ($\delta, \theta, \alpha, \beta, \gamma$) |
+| Electrode Nodes ($N$) | 62 | Standard 10–20 electrode configuration |
+| Graph Directed Edges ($E$) | 216 | 108 bidirectional anatomical adjacencies |
+| Optimizer | AdamW | Stage 2 GCN (`weight_decay = 1e-4`) |
+| Learning Rate | $1 \times 10^{-3}$ | Reduced by 0.5 via `ReduceLROnPlateau` (patience = 10) |
+| Batch Size | 32 | Mini-batch sample size |
+| Max Epochs | 100 | Stage 2 GCN |
+| Early Stopping | 20 | Epochs on validation accuracy |
+| Gradient Clipping | 1.0 | Max $L_2$-norm clipping |
+
 
 ---
 
