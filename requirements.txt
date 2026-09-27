@@ -1,8 +1,21 @@
-torch>=2.0.0
-torch-geometric>=2.3.0
-numpy>=1.22.0
-scipy>=1.10.0
-scikit-learn>=1.2.0
-pandas>=2.0.0
-openpyxl>=3.1.0
-tqdm>=4.65.0
+# Core
+numpy>=1.23
+pandas>=1.5
+
+# ML / DL
+torch>=2.1
+torchvision>=0.16
+torchaudio>=2.1
+
+# PyTorch Geometric (GCNConv, SAGEConv, TAGConv, BatchNorm)
+torch-geometric>=2.4
+
+# Data / files
+scipy>=1.9
+openpyxl>=3.1
+
+# Evaluation
+scikit-learn>=1.2
+
+# Optional but common
+tqdm>=4.66
