@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument(
         "--data_dir",
         type=str,
-        default=r"C:\dataset\SEED\SEED_EEG\ExtractedFeatures_4s",
+        default="data\ExtractedFeatures_4s",
         help="Path to SEED ExtractedFeatures_4s directory containing .mat files",
     )
     parser.add_argument(
