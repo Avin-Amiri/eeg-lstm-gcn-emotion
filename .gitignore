@@ -1,0 +1,10 @@
+saved_features/
+*.mat
+*.npy
+*.pt
+*.pth
+*.csv
+__pycache__/
+.ipynb_checkpoints/
+.vscode/
+.idea/
