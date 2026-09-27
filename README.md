@@ -56,7 +56,7 @@ Evaluated on stratified SEED splits (70% train, 15% validation, 15% test). Early
 
 ### 1. Grid Search Ablation Study (18 Configurations)
 
-| Rank | Embedding Dim ($d_{\text{emb}}$) | Hidden Dim ($d_{\text{hidden}}$) | GCN Layers ($L$) | Test Accuracy (%) | Weighted F1 (%) | Cross-Entropy Loss |
+| Rank | Embedding Dim ($d_{\text{emb}}$) | Hidden Dim ($d_{\text{hidden}}$) | GCN Layers ($L$) | Test Accuracy (%) | Weighted F1 (%) | test Loss |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 🥇 **1** | **64** | **256** | **3** | **97.98%** | **97.98%** | **0.0558** |
 | 🥈 2 | 128 | 256 | 3 | 97.84% | 97.83% | 0.0766 |
@@ -70,7 +70,6 @@ Evaluated on stratified SEED splits (70% train, 15% validation, 15% test). Early
 | Attention Network (2025) | Temporal Attention | 79.30% |
 | Vanilla GCN (Kipf & Welling, 2017) | Raw Electrode Graph | 81.56% |
 | GMSS (2022) | Multi-Source Domain Generalization | 86.52% |
-| ERGL (2023) | Graph Representation Learning | 94.92% |
 | **Proposed Framework (Ours)** | **Temporal LSTM + Spatial GCN** | **97.98%** |
 
 ---
