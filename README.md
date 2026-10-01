@@ -11,6 +11,8 @@ Official PyTorch implementation of the paper:
 *Proceedings of the 6th International Conference on Soft Computing (ICSC 2025)*
 
 *https://civilica.com/doc/2720860*
+<sub>https://civilica.com/doc/2720860</sub>
+
 ---
 
 ## 📌 Overview
